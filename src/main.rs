@@ -18,15 +18,20 @@ use axum::{
 };
 use tower_http::cors::{CorsLayer, Any};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use rust_embed::RustEmbed;
 
 use crate::config::AppConfig;
 use crate::db::Database;
+
+// Embed static files into binary
+#[derive(RustEmbed)]
+#[folder = "static/"]
+struct StaticAssets;
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: Arc<Mutex<Database>>,
     pub config: AppConfig,
-    pub static_dir: String,
 }
 
 #[tokio::main]
@@ -43,27 +48,17 @@ async fn main() {
 
     // Load configuration
     let config = AppConfig::load();
-    tracing::info!("Config loaded: {}:{}", config.host, config.port);
+    tracing::info!("Config loaded: {}:{} ", config.host, config.port);
 
     // Initialize database
     let db = Database::new(&config.db_path).await.expect("Failed to initialize database");
     let db = Arc::new(Mutex::new(db));
     tracing::info!("Database initialized at {}", config.db_path);
 
-    // Get absolute path for static directory
-    let exe_path = std::env::current_exe()
-        .expect("Failed to get executable path")
-        .parent()
-        .expect("Failed to get executable parent")
-        .to_path_buf();
-    let static_dir = exe_path.join("static").to_string_lossy().to_string();
-    tracing::info!("Static files directory: {}", static_dir);
-
     // Create app state
     let state = AppState {
         db,
         config: config.clone(),
-        static_dir,
     };
 
     // CORS
@@ -82,6 +77,7 @@ async fn main() {
         .route("/api/play", get(api::play::get_play))
         .route("/api/tvbox", get(api::tvbox::serve_tvbox))
         .route("/api/login", post(api::auth::login))
+        .route("/api/register", post(api::auth::register))
         .route("/api/logout", post(api::auth::logout))
         .route("/api/favorites", get(api::favorites::list_favorites))
         .route("/api/favorites", post(api::favorites::add_favorite))
@@ -90,88 +86,68 @@ async fn main() {
         .route("/api/playrecords", post(api::playrecords::add_record))
         .route("/api/user/preferences", get(api::user::get_preferences))
         .route("/api/user/preferences", post(api::user::set_preferences))
-        // Static files
+        // Admin routes
+        .route("/api/admin/users", get(api::admin::list_users))
+        .route("/api/admin/users/:id", delete(api::admin::delete_user))
+        .route("/api/admin/videos", get(api::admin::list_videos))
+        .route("/api/admin/videos/:id", delete(api::admin::delete_video))
+        .route("/api/admin/settings", get(api::admin::get_settings))
+        .route("/api/admin/settings", post(api::admin::update_settings))
+        // Static files (embedded)
         .route("/", get(serve_index))
         .route("/index.html", get(serve_index))
+        .route("/admin", get(serve_admin))
         .route("/admin.html", get(serve_admin))
         .route("/static/*path", get(serve_static_file))
         .layer(cors)
         .with_state(state);
 
-    let addr = format!("{}:{}", config.host, config.port);
+    let addr = format!("{}:{} ", config.host, config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     tracing::info!("Server listening on http://{}", addr);
 
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn serve_index(State(state): State<AppState>) -> impl IntoResponse {
-    serve_file(state.static_dir.clone(), "index.html".to_string()).await
+// Serve embedded static files
+async fn serve_index() -> impl IntoResponse {
+    serve_embedded("index.html")
 }
 
-async fn serve_admin(State(state): State<AppState>) -> impl IntoResponse {
-    serve_file(state.static_dir.clone(), "admin.html".to_string()).await
+async fn serve_admin() -> impl IntoResponse {
+    serve_embedded("index.html")
 }
 
-async fn serve_static_file(
-    State(state): State<AppState>,
-    axum::extract::Path(path): axum::extract::Path<String>,
-) -> impl IntoResponse {
-    serve_file(state.static_dir.clone(), path).await
+async fn serve_static_file(path: axum::extract::Path<String>) -> impl IntoResponse {
+    serve_embedded(&path.0)
 }
 
-async fn serve_file(static_dir: String, file: String) -> impl IntoResponse {
-    let path = std::path::Path::new(&static_dir).join(&file);
-    
-    // Security check: ensure the path is within static directory
-    let static_path = std::path::Path::new(&static_dir).canonicalize().unwrap_or_default();
-    let file_path = path.canonicalize().unwrap_or_default();
-    
-    if !file_path.starts_with(&static_path) {
-        return (
-            StatusCode::FORBIDDEN,
-            [("Content-Type", "text/plain")],
-            "Forbidden".as_bytes().to_vec(),
-        );
-    }
-    
-    match std::fs::read(&path) {
-        Ok(content) => {
-            let mime = get_mime_type(&file);
-            (
-                StatusCode::OK,
-                [("Content-Type", mime)],
-                content
-            )
+fn serve_embedded(path: &str) -> impl IntoResponse {
+    match StaticAssets::get(path) {
+        Some(content) => {
+            let mime = mime_guess::from_path(path).first_or_octet_stream().to_string();
+            (StatusCode::OK, [("Content-Type", mime.as_str())], content.data.to_vec())
         }
-        Err(_) => (
-            StatusCode::NOT_FOUND,
-            [("Content-Type", "text/html")],
-            "<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>404 - File Not Found</h1></body></html>".as_bytes().to_vec(),
-        ),
+        None => {
+            // Try index.html for directory requests
+            if path.is_empty() || path.ends_with('/') {
+                match StaticAssets::get("index.html") {
+                    Some(content) => {
+                        (StatusCode::OK, [("Content-Type", "text/html")], content.data.to_vec())
+                    }
+                    None => not_found()
+                }
+            } else {
+                not_found()
+            }
+        }
     }
 }
 
-fn get_mime_type(file: &str) -> &'static str {
-    if file.ends_with(".css") {
-        "text/css"
-    } else if file.ends_with(".js") {
-        "application/javascript"
-    } else if file.ends_with(".html") {
-        "text/html"
-    } else if file.ends_with(".json") {
-        "application/json"
-    } else if file.ends_with(".png") {
-        "image/png"
-    } else if file.ends_with(".jpg") || file.ends_with(".jpeg") {
-        "image/jpeg"
-    } else if file.ends_with(".svg") {
-        "image/svg+xml"
-    } else if file.ends_with(".ico") {
-        "image/x-icon"
-    } else if file.ends_with(".woff") || file.ends_with(".woff2") {
-        "font/woff2"
-    } else {
-        "application/octet-stream"
-    }
+fn not_found() -> impl IntoResponse {
+    (
+        StatusCode::NOT_FOUND,
+        [("Content-Type", "text/html")],
+        "<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>404 - File Not Found</h1></body></html>".as_bytes().to_vec(),
+    )
 }

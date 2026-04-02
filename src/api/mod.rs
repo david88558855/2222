@@ -10,3 +10,4 @@ pub mod auth;
 pub mod favorites;
 pub mod playrecords;
 pub mod user;
+pub mod admin;

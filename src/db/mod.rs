@@ -115,4 +115,82 @@ impl Database {
     pub fn get_conn(&self) -> &Connection {
         &self.conn
     }
+
+    // List all users (admin function)
+    pub async fn list_all_users(&self) -> Result<Vec<crate::models::User>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare("SELECT id, username, role, created_at FROM users ORDER BY id")?;
+        let user_iter = stmt.query_map([], |row| {
+            Ok(crate::models::User {
+                id: row.get(0)?,
+                username: row.get(1)?,
+                password_hash: String::new(), // Don't return password hash
+                role: row.get(2)?,
+                created_at: row.get::<_, i64>(3).map(|ts| ts.to_string()).unwrap_or_default(),
+            })
+        })?;
+
+        let mut users = Vec::new();
+        for user in user_iter {
+            if let Ok(u) = user {
+                users.push(u);
+            }
+        }
+        Ok(users)
+    }
+
+    // Delete user by ID (admin function)
+    pub async fn delete_user_by_id(&self, id: i64) -> Result<(), rusqlite::Error> {
+        self.conn.execute("DELETE FROM users WHERE id = ?", [id])?;
+        Ok(())
+    }
+
+    // Find user by username
+    pub async fn find_user_by_username(&self, username: &str) -> Result<Option<crate::models::User>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare("SELECT id, username, password_hash, role, created_at FROM users WHERE username = ?")?;
+        let mut rows = stmt.query([username])?;
+        
+        if let Some(row) = rows.next()? {
+            Ok(Some(crate::models::User {
+                id: row.get(0)?,
+                username: row.get(1)?,
+                password_hash: row.get(2)?,
+                role: row.get(3)?,
+                created_at: row.get::<_, i64>(4).map(|ts| ts.to_string()).unwrap_or_default(),
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    // Create new user
+    pub async fn create_user(&self, username: &str, password_hash: &str, role: &str) -> Result<i64, rusqlite::Error> {
+        let mut stmt = self.conn.prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)")?;
+        let id = stmt.insert((username, password_hash, role))?;
+        
+        // Create default preferences for new user
+        let mut prefs_stmt = self.conn.prepare("INSERT OR IGNORE INTO user_preferences (user_id) VALUES (?)")?;
+        let _ = prefs_stmt.insert([id]);
+        
+        Ok(id)
+    }
+
+    // Create session
+    pub async fn create_session(&self, token: String, user_id: i64, expires_in_secs: i64) -> Result<(), rusqlite::Error> {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+        let expires_at = now + expires_in_secs;
+        
+        let mut stmt = self.conn.prepare("INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)")?;
+        stmt.insert((token, user_id, expires_at))?;
+        Ok(())
+    }
+
+    // Delete session
+    pub async fn delete_session(&self, token: &str) -> Result<(), rusqlite::Error> {
+        self.conn.execute("DELETE FROM sessions WHERE id = ?", [token])?;
+        Ok(())
+    }
 }

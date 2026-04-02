@@ -13,7 +13,7 @@ path = "src/main.rs"
 # Web framework
 axum = "0.7"
 tower = "0.4"
-tower-http = { version = "0.5", features = ["fs", "cors", "trace"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
 hyper = "1.3"
 http-body = "1.0"
 
@@ -40,6 +40,10 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Config
 dirs = "5.0"
+
+# Embedded static files
+rust-embed = { version = "8.0", features = ["compression"] }
+mime_guess = "2.0"
 
 [profile.release]
 opt-level = "z"
