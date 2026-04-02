@@ -1,6 +1,9 @@
 name: Build Linux AMD64 Binary
 
 on:
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 env:
@@ -43,8 +46,15 @@ jobs:
       run: |
         strip target/x86_64-unknown-linux-musl/release/moontv
 
+    - name: Create deployment package
+      run: |
+        mkdir -p deploy
+        cp target/x86_64-unknown-linux-musl/release/moontv deploy/
+        cp -r static deploy/
+        chmod +x deploy/moontv
+
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: moontv-linux-amd64
-        path: target/x86_64-unknown-linux-musl/release/moontv
+        path: deploy/
