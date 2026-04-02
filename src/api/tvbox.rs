@@ -4,7 +4,6 @@ use axum::{
     extract::{Query, State},
     response::IntoResponse,
     http::StatusCode,
-    header::HeaderName,
 };
 use serde::{Deserialize, Serialize};
 use crate::AppState;
@@ -85,22 +84,15 @@ pub async fn serve_tvbox(
     };
 
     let json_str = serde_json::to_string(&config).unwrap_or_default();
+    let content_type = if params.format == "txt" {
+        "text/plain; charset=utf-8"
+    } else {
+        "application/json; charset=utf-8"
+    };
     
-    match params.format.as_str() {
-        "txt" => (
-            StatusCode::OK,
-            [(HeaderName::from_static("content-type"), "text/plain; charset=utf-8")],
-            json_str
-        ),
-        "json" => (
-            StatusCode::OK,
-            [(HeaderName::from_static("content-type"), "application/json; charset=utf-8")],
-            json_str
-        ),
-        _ => (
-            StatusCode::OK,
-            [(HeaderName::from_static("content-type"), "application/json; charset=utf-8")],
-            json_str
-        ),
-    }
+    (
+        StatusCode::OK,
+        [("Content-Type", content_type)],
+        json_str
+    )
 }

@@ -20,7 +20,7 @@ fn default_page() -> usize { 1 }
 fn default_page_size() -> usize { 20 }
 
 pub async fn search(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Query(params): Query<SearchParams>,
 ) -> Json<ApiResponse<SearchResult>> {
     let keyword = params.keyword.unwrap_or_default();

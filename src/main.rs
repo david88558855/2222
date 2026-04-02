@@ -12,12 +12,10 @@ use tokio::sync::Mutex;
 use axum::{
     Router,
     routing::{get, post, delete},
-    response::{IntoResponse, Response},
-    http::{StatusCode, header::HeaderName},
-    body::Body,
+    response::IntoResponse,
+    http::StatusCode,
 };
 use tower_http::cors::{CorsLayer, Any};
-use tower_http::fs::ServeFileSystem;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::AppConfig;
@@ -122,21 +120,21 @@ async fn serve_static(
             };
             (
                 StatusCode::OK,
-                [(HeaderName::from_static("content-type"), mime)],
+                [("Content-Type", mime)],
                 content
             )
         }
         Err(_) => (
             StatusCode::NOT_FOUND,
-            "Not found"
+            [("Content-Type", "text/plain")],
+            "Not found".as_bytes().to_vec()
         ),
     }
 }
 
-fn redirect(uri: &str) -> Response<Body> {
-    Response::builder()
-        .status(StatusCode::SEE_OTHER)
-        .header("Location", uri)
-        .body(Body::empty())
-        .unwrap()
+fn redirect(uri: &str) -> impl IntoResponse {
+    (
+        StatusCode::SEE_OTHER,
+        [("Location", uri)],
+    )
 }
