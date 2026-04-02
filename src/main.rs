@@ -106,25 +106,25 @@ async fn main() {
 }
 
 async fn serve_index(State(state): State<AppState>) -> impl IntoResponse {
-    serve_file(&state.static_dir, "index.html").await
+    serve_file(state.static_dir.clone(), "index.html".to_string()).await
 }
 
 async fn serve_admin(State(state): State<AppState>) -> impl IntoResponse {
-    serve_file(&state.static_dir, "admin.html").await
+    serve_file(state.static_dir.clone(), "admin.html".to_string()).await
 }
 
 async fn serve_static_file(
     State(state): State<AppState>,
     axum::extract::Path(path): axum::extract::Path<String>,
 ) -> impl IntoResponse {
-    serve_file(&state.static_dir, &path).await
+    serve_file(state.static_dir.clone(), path).await
 }
 
-async fn serve_file(static_dir: &str, file: &str) -> impl IntoResponse {
-    let path = std::path::Path::new(static_dir).join(file);
+async fn serve_file(static_dir: String, file: String) -> impl IntoResponse {
+    let path = std::path::Path::new(&static_dir).join(&file);
     
     // Security check: ensure the path is within static directory
-    let static_path = std::path::Path::new(static_dir).canonicalize().unwrap_or_default();
+    let static_path = std::path::Path::new(&static_dir).canonicalize().unwrap_or_default();
     let file_path = path.canonicalize().unwrap_or_default();
     
     if !file_path.starts_with(&static_path) {
@@ -137,7 +137,7 @@ async fn serve_file(static_dir: &str, file: &str) -> impl IntoResponse {
     
     match std::fs::read(&path) {
         Ok(content) => {
-            let mime = get_mime_type(file);
+            let mime = get_mime_type(&file);
             (
                 StatusCode::OK,
                 [("Content-Type", mime)],
