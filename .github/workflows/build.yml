@@ -1,11 +1,11 @@
 name: Build Linux AMD64 Binary
 
-on:
+于:
   push:
-    branches: [main]
-    tags: ['v*']
+    分支: [main]
+    标签: ['v*']
   pull_request:
-    branches: [main]
+    分支: [main]
   workflow_dispatch:
 
 env:
