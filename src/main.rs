@@ -13,11 +13,11 @@ use axum::{
     Router,
     routing::{get, post, delete},
     response::{IntoResponse, Response},
-    http::StatusCode,
+    http::{StatusCode, header::HeaderName},
     body::Body,
 };
 use tower_http::cors::{CorsLayer, Any};
-use tower_http::serve_dir::ServeDir;
+use tower_http::fs::ServeFileSystem;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::AppConfig;
@@ -62,9 +62,6 @@ async fn main() {
         .allow_methods(Any)
         .allow_headers(Any);
 
-    // Static files
-    let static_files = ServeDir::new("static");
-
     // Build router
     let app = Router::new()
         .route("/", get(serve_index))
@@ -85,7 +82,7 @@ async fn main() {
         .route("/api/playrecords", post(api::playrecords::add_record))
         .route("/api/user/preferences", get(api::user::get_preferences))
         .route("/api/user/preferences", post(api::user::set_preferences))
-        .nest_service("/static", static_files)
+        .route("/static/:file", get(serve_static))
         .layer(cors)
         .with_state(state);
 
@@ -102,6 +99,38 @@ async fn serve_index() -> impl IntoResponse {
 
 async fn serve_admin() -> impl IntoResponse {
     redirect("/index.html")
+}
+
+async fn serve_static(
+    axum::extract::Path(file): axum::extract::Path<String>,
+) -> impl IntoResponse {
+    let path = format!("static/{}", file);
+    match std::fs::read(&path) {
+        Ok(content) => {
+            let mime = if file.ends_with(".css") {
+                "text/css"
+            } else if file.ends_with(".js") {
+                "application/javascript"
+            } else if file.ends_with(".html") {
+                "text/html"
+            } else if file.ends_with(".png") {
+                "image/png"
+            } else if file.ends_with(".jpg") || file.ends_with(".jpeg") {
+                "image/jpeg"
+            } else {
+                "application/octet-stream"
+            };
+            (
+                StatusCode::OK,
+                [(HeaderName::from_static("content-type"), mime)],
+                content
+            )
+        }
+        Err(_) => (
+            StatusCode::NOT_FOUND,
+            "Not found"
+        ),
+    }
 }
 
 fn redirect(uri: &str) -> Response<Body> {

@@ -4,7 +4,7 @@ use axum::{
     extract::{Query, State},
     response::IntoResponse,
     http::StatusCode,
-    body::Body,
+    header::HeaderName,
 };
 use serde::{Deserialize, Serialize};
 use crate::AppState;
@@ -89,17 +89,18 @@ pub async fn serve_tvbox(
     match params.format.as_str() {
         "txt" => (
             StatusCode::OK,
-            [("Content-Type", "text/plain; charset=utf-8")],
+            [(HeaderName::from_static("content-type"), "text/plain; charset=utf-8")],
             json_str
         ),
         "json" => (
             StatusCode::OK,
-            [("Content-Type", "application/json; charset=utf-8")],
+            [(HeaderName::from_static("content-type"), "application/json; charset=utf-8")],
             json_str
         ),
         _ => (
-            StatusCode::BAD_REQUEST,
-            "Invalid format"
+            StatusCode::OK,
+            [(HeaderName::from_static("content-type"), "application/json; charset=utf-8")],
+            json_str
         ),
     }
 }
