@@ -3,10 +3,6 @@ name = "moontv"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-name = "moontv_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
-
 [[bin]]
 name = "moontv"
 path = "src/main.rs"
