@@ -15,7 +15,9 @@ impl Database {
     pub async fn new(path: &str) -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let db_path = Path::new(path);
         if let Some(parent) = db_path.parent() {
-            tokio::fs::create_dir_all(parent).await?;
+            if !parent.exists() {
+                std::fs::create_dir_all(parent)?;
+            }
         }
         
         let conn = Connection::open(path)?;

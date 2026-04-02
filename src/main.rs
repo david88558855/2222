@@ -9,7 +9,13 @@ mod utils;
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    routing::{get, post, delete},
+    response::{IntoResponse, Response},
+    http::StatusCode,
+    body::Body,
+};
 use tower_http::cors::{CorsLayer, Any};
 use tower_http::serve_dir::ServeDir;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -17,6 +23,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use crate::config::AppConfig;
 use crate::db::Database;
 
+#[derive(Clone)]
 pub struct AppState {
     pub db: Arc<Mutex<Database>>,
     pub config: AppConfig,
@@ -89,20 +96,18 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn serve_index() -> impl axum::response::IntoResponse {
+async fn serve_index() -> impl IntoResponse {
     redirect("/index.html")
 }
 
-async fn serve_admin() -> impl axum::response::IntoResponse {
-    // TODO: Serve admin.html if exists
+async fn serve_admin() -> impl IntoResponse {
     redirect("/index.html")
 }
 
-fn redirect(uri: &str) -> impl axum::response::IntoResponse {
-    (
-        axum::http::StatusCode::SEE_OTHER,
-        [(axum::http::header::LOCATION, uri)],
-    )
+fn redirect(uri: &str) -> Response<Body> {
+    Response::builder()
+        .status(StatusCode::SEE_OTHER)
+        .header("Location", uri)
+        .body(Body::empty())
+        .unwrap()
 }
-
-use axum::routing::post;

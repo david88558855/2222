@@ -1,9 +1,9 @@
 //! Search endpoint
 
 use axum::{extract::{State, Query}, Json};
-use std::collections::HashMap;
+use serde::Deserialize;
 use crate::AppState;
-use crate::models::{ApiResponse, SearchResult, Video};
+use crate::models::{ApiResponse, SearchResult};
 
 #[derive(Deserialize, Default)]
 pub struct SearchParams {

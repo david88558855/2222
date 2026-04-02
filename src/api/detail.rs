@@ -3,7 +3,7 @@
 use axum::{extract::{Query, State}, Json};
 use serde::Deserialize;
 use crate::AppState;
-use crate::models::{ApiResponse, VideoDetail, Episode};
+use crate::models::{ApiResponse, VideoDetail};
 
 #[derive(Deserialize)]
 pub struct DetailParams {

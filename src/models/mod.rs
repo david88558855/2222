@@ -64,7 +64,8 @@ impl<T> ApiResponse<T> {
 pub struct TvBoxResponse {
     pub name: String,
     pub url: String,
-    pub type: String,
+    #[serde(rename = "type")]
+    pub video_type: String,
     pub group: String,
 }
 

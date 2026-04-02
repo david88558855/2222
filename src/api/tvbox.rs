@@ -1,9 +1,13 @@
 //! TVBox compatible endpoint
 
-use axum::{extract::{Query, State}, Json};
+use axum::{
+    extract::{Query, State},
+    response::IntoResponse,
+    http::StatusCode,
+    body::Body,
+};
 use serde::{Deserialize, Serialize};
 use crate::AppState;
-use crate::models::ApiResponse;
 
 #[derive(Deserialize)]
 pub struct TvBoxParams {
@@ -51,7 +55,7 @@ pub struct TvBoxIjk {
 pub async fn serve_tvbox(
     State(state): State<AppState>,
     Query(params): Query<TvBoxParams>,
-) -> impl axum::response::IntoResponse {
+) -> impl IntoResponse {
     let base_url = format!("http://{}:{}", state.config.host, state.config.port);
     
     let mut sites: Vec<TvBoxSite> = vec![];
@@ -80,19 +84,21 @@ pub async fn serve_tvbox(
         ijk: vec![],
     };
 
+    let json_str = serde_json::to_string(&config).unwrap_or_default();
+    
     match params.format.as_str() {
-        "txt" => axum::response::IntoResponse::into_response(
-            axum::http::StatusCode::OK,
+        "txt" => (
+            StatusCode::OK,
             [("Content-Type", "text/plain; charset=utf-8")],
-            serde_json::to_string(&config).unwrap_or_default()
+            json_str
         ),
-        "json" => axum::response::IntoResponse::into_response(
-            axum::http::StatusCode::OK,
+        "json" => (
+            StatusCode::OK,
             [("Content-Type", "application/json; charset=utf-8")],
-            serde_json::to_string(&config).unwrap_or_default()
+            json_str
         ),
-        _ => axum::response::IntoResponse::into_response(
-            axum::http::StatusCode::BAD_REQUEST,
+        _ => (
+            StatusCode::BAD_REQUEST,
             "Invalid format"
         ),
     }

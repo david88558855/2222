@@ -1,7 +1,5 @@
 //! HTTP utilities
 
-use hyper::header::HeaderValue;
-
 pub fn get_content_type(path: &str) -> &'static str {
     let lower = path.to_lowercase();
     if lower.ends_with(".html") {
