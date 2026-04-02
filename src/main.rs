@@ -152,7 +152,7 @@ async fn serve_file(static_dir: String, file: String) -> impl IntoResponse {
     }
 }
 
-fn get_mime_type(file: &str) -> &str {
+fn get_mime_type(file: &str) -> &'static str {
     if file.ends_with(".css") {
         "text/css"
     } else if file.ends_with(".js") {

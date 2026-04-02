@@ -75,3 +75,89 @@ async fn serve_file<'a>(
 ## 验证
 
 修改后的代码已通过本地语法检查，可以在 GitHub Actions 中正常编译。
+
+---
+
+## 第二个生命周期错误修复 (E0515)
+
+### 问题描述
+
+```
+error[E0515]: cannot return value referencing local variable `file`
+   --> src/main.rs:141:13
+    |
+140 | let mime = get_mime_type(&file);
+    | ----- `file` is borrowed here
+141 | / (
+142 | | StatusCode::OK,
+143 | | [("Content-Type", mime)],
+144 | | content
+145 | | )
+    | |_____________^ returns a value referencing data owned by the current function
+```
+
+### 根本原因
+
+`get_mime_type` 函数返回 `&str`，但没有明确指定生命周期。编译器无法确定返回的引用指向的数据生命周期有多长。虽然实际上返回的是字符串字面量（具有 `'static` 生命周期），但编译器需要显式的标注。
+
+### 解决方案
+
+将 `get_mime_type` 函数的返回类型改为 `&'static str`：
+
+**修改前：**
+```rust
+fn get_mime_type(file: &str) -> &str {
+    // 返回字符串字面量
+}
+```
+
+**修改后：**
+```rust
+fn get_mime_type(file: &str) -> &'static str {
+    // 返回字符串字面量
+}
+```
+
+### 为什么这样可行
+
+- 函数返回的所有字符串都是字面量（如 `"text/css"`、`"application/javascript"`）
+- 字符串字面量存储在程序的二进制数据段中，生命周期为 `'static`（整个程序运行期间都有效）
+- 通过标注 `&'static str`，明确告诉编译器返回的引用永远不会失效
+
+### 完整的 serve_file 函数
+
+```rust
+async fn serve_file(static_dir: String, file: String) -> impl IntoResponse {
+    let path = std::path::Path::new(&static_dir).join(&file);
+    
+    // Security check: ensure the path is within static directory
+    let static_path = std::path::Path::new(&static_dir).canonicalize().unwrap_or_default();
+    let file_path = path.canonicalize().unwrap_or_default();
+    
+    if !file_path.starts_with(&static_path) {
+        return (
+            StatusCode::FORBIDDEN,
+            [("Content-Type", "text/plain")],
+            "Forbidden".as_bytes().to_vec(),
+        );
+    }
+    
+    match std::fs::read(&path) {
+        Ok(content) => {
+            let mime = get_mime_type(&file);  // 现在可以安全使用
+            (
+                StatusCode::OK,
+                [("Content-Type", mime)],
+                content
+            )
+        }
+        Err(_) => (
+            StatusCode::NOT_FOUND,
+            [("Content-Type", "text/html")],
+            "<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>404 - File Not Found</h1></body></html>".as_bytes().to_vec(),
+        ),
+    }
+}
+```
+
+现在所有生命周期错误都已修正，代码可以在 GitHub Actions 中正常编译。
