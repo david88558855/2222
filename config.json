@@ -1,0 +1,16 @@
+{
+  "host": "0.0.0.0",
+  "port": 3000,
+  "username": "admin",
+  "password": "admin",
+  "cache_time": 7200,
+  "db_path": "data/moontv.db",
+  "api_site": {
+    "example": {
+      "api": "https://api.example.com/provide/vod",
+      "name": "示例视频站",
+      "detail": "https://example.com",
+      "is_adult": false
+    }
+  }
+}

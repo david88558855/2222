@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoonTV</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="manifest" href="/manifest.json">
+</head>
+<body class="dark">
+    <div id="app">
+        <header class="header">
+            <div class="logo">
+                <h1>MoonTV</h1>
+            </div>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="搜索视频...">
+                <button id="search-btn">搜索</button>
+            </div>
+            <div class="user-menu">
+                <span id="user-name"></span>
+                <button id="login-btn">登录</button>
+                <button id="logout-btn" style="display:none">退出</button>
+            </div>
+        </header>
+        
+        <main class="main">
+            <nav class="sidebar">
+                <a href="/" class="active">首页</a>
+                <a href="#favorites">收藏</a>
+                <a href="#history">历史</a>
+                <a href="#settings">设置</a>
+                <a href="#admin">管理</a>
+            </nav>
+            
+            <section class="content">
+                <div id="video-list" class="video-grid"></div>
+                <div id="video-detail" class="video-detail" style="display:none"></div>
+                <div id="player" class="player" style="display:none">
+                    <video id="video-player" controls></video>
+                    <div class="player-controls">
+                        <button id="prev-ep">上一集</button>
+                        <button id="next-ep">下一集</button>
+                        <button id="skip-intro">跳过片头</button>
+                        <button id="add-fav">收藏</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer class="footer">
+            <p>MoonTV - Rust + SQLite</p>
+        </footer>
+    </div>
+    
+    <div id="login-modal" class="modal" style="display:none">
+        <div class="modal-content">
+            <h2>登录</h2>
+            <input type="text" id="login-username" placeholder="用户名">
+            <input type="password" id="login-password" placeholder="密码">
+            <button id="login-submit">登录</button>
+            <button id="login-cancel">取消</button>
+        </div>
+    </div>
+    
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

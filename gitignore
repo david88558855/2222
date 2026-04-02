@@ -1,0 +1,36 @@
+# Build artifacts
+/target/
+**/*.rs.bk
+
+# Database
+*.db
+*.db-journal
+/data/
+
+# Config (user-specific)
+config.json
+*.local.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Backup files
+*.backup
+*.bak
+
+# Secrets
+.env
+.env.*
+!.env.example
