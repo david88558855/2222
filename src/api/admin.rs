@@ -14,17 +14,17 @@ pub struct UserInfo {
 }
 
 pub async fn list_users(
-    State(state): State<AppState>,
+    _state: State<AppState>,
 ) -> Json<ApiResponse<Vec<UserInfo>>> {
-    let db = state.db.lock().await;
+    let db = _state.db.lock().await;
     
     match db.list_all_users().await {
         Ok(users) => {
             let user_infos: Vec<UserInfo> = users.into_iter().map(|u| UserInfo {
                 id: u.id,
-                username: u.username,
-                role: u.role,
-                created_at: u.created_at,
+                username: u.username.clone(),
+                role: u.role.clone(),
+                created_at: u.created_at.to_string(),
             }).collect();
             Json(ApiResponse::success(user_infos))
         }
@@ -34,10 +34,10 @@ pub async fn list_users(
 
 // Delete a user
 pub async fn delete_user(
-    State(state): State<AppState>,
+    _state: State<AppState>,
     Path(id): Path<i64>,
 ) -> Json<ApiResponse<String>> {
-    let db = state.db.lock().await;
+    let db = _state.db.lock().await;
     
     match db.delete_user_by_id(id).await {
         Ok(_) => Json(ApiResponse::success("User deleted".to_string())),
@@ -100,7 +100,7 @@ pub struct UpdateSettingsRequest {
 }
 
 pub async fn update_settings(
-    State(state): State<AppState>,
+    _state: State<AppState>,
     Json(req): Json<UpdateSettingsRequest>,
 ) -> Json<ApiResponse<SystemSettings>> {
     // TODO: Persist settings to database

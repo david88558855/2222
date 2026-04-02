@@ -1,4 +1,4 @@
-- 项目名称：moontv，技术栈为 Rust + Axum。
+- 项目名称：moontv，技术栈为 Rust + Axum + rusqlite。
 - 用户偏好：不需要在 Windows 系统上进行测试和编译。
 - 用户偏好：项目编译和构建在 GitHub Actions 工作流中完成，不需要本地编译脚本。
 - 架构决策：使用 `rust-embed` crate 将静态资源嵌入二进制文件，实现单文件部署，无需单独 static 目录。
@@ -6,5 +6,7 @@
 - 功能需求：管理后台必须包含用户管理、内容管理、系统设置三个完整模块。
 - 适配需求：前端必须响应式适配 TV（大屏）、安卓手机（小屏触控）、PC（桌面）三种设备。
 - 权限规范：管理员角色标识为字符串 `"admin"`，前端权限检查必须使用字符串比较（`role === 'admin'`），不可使用数字比较。
+- 数据模型：`User` 结构体包含 id, username, password_hash, role, created_at 字段；`UserInfo` 用于 API 返回不含密码的用户信息。
 - 技术修正：`serve_file` 函数参数需使用 `String` 类型而非 `&str`，以避免 Rust 生命周期捕获错误 (E0700)。
 - 技术修正：`get_mime_type` 函数返回类型必须声明为 `&'static str`，以避免返回引用局部变量的编译错误 (E0515)。
+- 技术修正：`match` 表达式 arms 必须返回相同类型，静态文件未找到时需内联返回 404 tuple 而非调用 `impl IntoResponse` 函数。

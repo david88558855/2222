@@ -100,3 +100,20 @@ pub struct UserPreferences {
     pub default_quality: String,
     pub volume_level: i32,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct User {
+    pub id: i64,
+    pub username: String,
+    pub password_hash: String,
+    pub role: String,
+    pub created_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserInfo {
+    pub id: i64,
+    pub username: String,
+    pub role: String,
+    pub created_at: i64,
+}

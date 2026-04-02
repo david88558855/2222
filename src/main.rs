@@ -14,7 +14,6 @@ use axum::{
     routing::{get, post, delete},
     response::IntoResponse,
     http::StatusCode,
-    extract::State,
 };
 use tower_http::cors::{CorsLayer, Any};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -135,19 +134,19 @@ fn serve_embedded(path: &str) -> impl IntoResponse {
                     Some(content) => {
                         (StatusCode::OK, [("Content-Type", "text/html")], content.data.to_vec())
                     }
-                    None => not_found()
+                    None => (
+                        StatusCode::NOT_FOUND,
+                        [("Content-Type", "text/html")],
+                        "<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>404 - File Not Found</h1></body></html>".as_bytes().to_vec(),
+                    )
                 }
             } else {
-                not_found()
+                (
+                    StatusCode::NOT_FOUND,
+                    [("Content-Type", "text/html")],
+                    "<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>404 - File Not Found</h1></body></html>".as_bytes().to_vec(),
+                )
             }
         }
     }
-}
-
-fn not_found() -> impl IntoResponse {
-    (
-        StatusCode::NOT_FOUND,
-        [("Content-Type", "text/html")],
-        "<!DOCTYPE html><html><head><title>404 Not Found</title></head><body><h1>404 - File Not Found</h1></body></html>".as_bytes().to_vec(),
-    )
 }
