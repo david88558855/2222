@@ -12,9 +12,10 @@ pub struct ListParams {
 
 pub async fn list_favorites(
     State(_state): State<AppState>,
-    Query(_params): Query<ListParams>,
+    Query(params): Query<ListParams>,
 ) -> Json<ApiResponse<Vec<Favorite>>> {
     // TODO: Query from database
+    let _ = params.user_id;
     Json(ApiResponse::success(vec![]))
 }
 
@@ -29,9 +30,10 @@ pub struct AddFavoriteRequest {
 
 pub async fn add_favorite(
     State(_state): State<AppState>,
-    Json(_req): Json<AddFavoriteRequest>,
+    Json(req): Json<AddFavoriteRequest>,
 ) -> Json<ApiResponse<String>> {
     // TODO: Insert into database
+    let _ = req;
     Json(ApiResponse::success("Added".to_string()))
 }
 
@@ -43,8 +45,9 @@ pub struct RemoveFavoriteRequest {
 
 pub async fn remove_favorite(
     State(_state): State<AppState>,
-    Json(_req): Json<RemoveFavoriteRequest>,
+    Json(req): Json<RemoveFavoriteRequest>,
 ) -> Json<ApiResponse<String>> {
     // TODO: Remove from database
+    let _ = req;
     Json(ApiResponse::success("Removed".to_string()))
 }

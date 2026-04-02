@@ -12,9 +12,9 @@ pub struct ListParams {
 
 pub async fn list_records(
     State(_state): State<AppState>,
-    Query(_params): Query<ListParams>,
+    Query(params): Query<ListParams>,
 ) -> Json<ApiResponse<Vec<PlayRecord>>> {
-    // TODO: Query from database
+    let _ = params.user_id;
     Json(ApiResponse::success(vec![]))
 }
 
@@ -31,8 +31,8 @@ pub struct AddRecordRequest {
 
 pub async fn add_record(
     State(_state): State<AppState>,
-    Json(_req): Json<AddRecordRequest>,
+    Json(req): Json<AddRecordRequest>,
 ) -> Json<ApiResponse<String>> {
-    // TODO: Insert or update in database
+    let _ = req;
     Json(ApiResponse::success("Saved".to_string()))
 }

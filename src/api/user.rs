@@ -12,8 +12,9 @@ pub struct GetParams {
 
 pub async fn get_preferences(
     State(_state): State<AppState>,
-    Query(_params): Query<GetParams>,
+    Query(params): Query<GetParams>,
 ) -> Json<ApiResponse<UserPreferences>> {
+    let _ = params.user_id;
     let prefs = UserPreferences {
         theme: "dark".to_string(),
         adult_filter_enabled: true,
@@ -33,8 +34,8 @@ pub struct SetPreferencesRequest {
 
 pub async fn set_preferences(
     State(_state): State<AppState>,
-    Json(_req): Json<SetPreferencesRequest>,
+    Json(req): Json<SetPreferencesRequest>,
 ) -> Json<ApiResponse<String>> {
-    // TODO: Update in database
+    let _ = req;
     Json(ApiResponse::success("Saved".to_string()))
 }

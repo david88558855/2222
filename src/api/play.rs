@@ -23,9 +23,10 @@ pub struct PlayResponse {
 
 pub async fn get_play(
     State(_state): State<AppState>,
-    Query(_params): Query<PlayParams>,
+    Query(params): Query<PlayParams>,
 ) -> Json<ApiResponse<PlayResponse>> {
     // TODO: Fetch play URL from video source
+    let _ = params.id.clone();
     let response = PlayResponse {
         url: "".to_string(),
         play_url: "".to_string(),
