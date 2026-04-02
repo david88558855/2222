@@ -33,6 +33,11 @@ function bindEvents() {
     // Logout
     document.getElementById('logout-btn').addEventListener('click', doLogout);
     
+    // Sidebar navigation
+    document.querySelectorAll('.sidebar a').forEach(link => {
+        link.addEventListener('click', handleNavigation);
+    });
+    
     // Keyboard shortcuts
     document.addEventListener('keypress', (e) => {
         if (e.key === 'Escape') {
@@ -65,6 +70,155 @@ async function loadConfig() {
     } catch (e) {
         console.error('Failed to load config:', e);
     }
+}
+
+// Handle sidebar navigation
+function handleNavigation(e) {
+    const href = e.currentTarget.getAttribute('href');
+    
+    // Update active state
+    document.querySelectorAll('.sidebar a').forEach(link => {
+        link.classList.remove('active');
+    });
+    e.currentTarget.classList.add('active');
+    
+    // Hide all content sections
+    document.getElementById('video-list').style.display = 'none';
+    document.getElementById('video-detail').style.display = 'none';
+    document.getElementById('player').style.display = 'none';
+    
+    // Handle different routes
+    if (href === '/') {
+        // Home page - show video list
+        document.getElementById('video-list').style.display = 'block';
+        loadVideos();
+    } else if (href === '#favorites') {
+        // Favorites page
+        document.getElementById('video-list').style.display = 'block';
+        loadFavorites();
+    } else if (href === '#history') {
+        // History page
+        document.getElementById('video-list').style.display = 'block';
+        loadHistory();
+    } else if (href === '#settings') {
+        // Settings page
+        showSettings();
+    } else if (href === '#admin') {
+        // Admin page
+        showAdmin();
+    }
+    
+    e.preventDefault();
+}
+
+async function loadVideos() {
+    try {
+        const res = await fetch(`${API_BASE}/api/home`);
+        const data = await res.json();
+        if (data.code === 0) {
+            renderVideoList(data.data.list);
+        }
+    } catch (e) {
+        console.error('Failed to load videos:', e);
+    }
+}
+
+async function loadFavorites() {
+    if (!token) {
+        document.getElementById('video-list').innerHTML = '<p class="empty">请先登录</p>';
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/api/favorites`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.code === 0) {
+            renderVideoList(data.data.list);
+        } else {
+            document.getElementById('video-list').innerHTML = '<p class="empty">加载失败</p>';
+        }
+    } catch (e) {
+        console.error('Failed to load favorites:', e);
+        document.getElementById('video-list').innerHTML = '<p class="empty">加载失败</p>';
+    }
+}
+
+async function loadHistory() {
+    if (!token) {
+        document.getElementById('video-list').innerHTML = '<p class="empty">请先登录</p>';
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_BASE}/api/history`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.code === 0) {
+            renderVideoList(data.data.list);
+        } else {
+            document.getElementById('video-list').innerHTML = '<p class="empty">加载失败</p>';
+        }
+    } catch (e) {
+        console.error('Failed to load history:', e);
+        document.getElementById('video-list').innerHTML = '<p class="empty">加载失败</p>';
+    }
+}
+
+function showSettings() {
+    if (!token) {
+        document.getElementById('video-list').innerHTML = '<p class="empty">请先登录</p>';
+        document.getElementById('video-list').style.display = 'block';
+        return;
+    }
+    
+    document.getElementById('video-list').innerHTML = `
+        <div class="settings-panel">
+            <h2>设置</h2>
+            <div class="setting-item">
+                <label>用户名</label>
+                <span>${user ? user.username : ''}</span>
+            </div>
+            <div class="setting-item">
+                <label>用户 ID</label>
+                <span>${user ? user.id : ''}</span>
+            </div>
+            <div class="setting-item">
+                <label>角色</label>
+                <span>${user ? (user.role === 1 ? '管理员' : '普通用户') : ''}</span>
+            </div>
+        </div>
+    `;
+    document.getElementById('video-list').style.display = 'block';
+}
+
+function showAdmin() {
+    if (!token || !user || user.role !== 1) {
+        document.getElementById('video-list').innerHTML = '<p class="empty">需要管理员权限</p>';
+        document.getElementById('video-list').style.display = 'block';
+        return;
+    }
+    
+    document.getElementById('video-list').innerHTML = `
+        <div class="admin-panel">
+            <h2>管理后台</h2>
+            <div class="admin-section">
+                <h3>用户管理</h3>
+                <p>管理用户账户和权限</p>
+            </div>
+            <div class="admin-section">
+                <h3>内容管理</h3>
+                <p>管理视频内容和分类</p>
+            </div>
+            <div class="admin-section">
+                <h3>系统设置</h3>
+                <p>配置系统参数</p>
+            </div>
+        </div>
+    `;
+    document.getElementById('video-list').style.display = 'block';
 }
 
 async function doLogin() {
