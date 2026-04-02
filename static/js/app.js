@@ -187,7 +187,7 @@ function showSettings() {
             </div>
             <div class="setting-item">
                 <label>角色</label>
-                <span>${user ? (user.role === 1 ? '管理员' : '普通用户') : ''}</span>
+                <span>${user ? (user.role === 'admin' ? '管理员' : '普通用户') : ''}</span>
             </div>
         </div>
     `;
@@ -195,7 +195,7 @@ function showSettings() {
 }
 
 function showAdmin() {
-    if (!token || !user || user.role !== 1) {
+    if (!token || !user || user.role !== 'admin') {
         document.getElementById('video-list').innerHTML = '<p class="empty">需要管理员权限</p>';
         document.getElementById('video-list').style.display = 'block';
         return;
