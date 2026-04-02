@@ -132,7 +132,7 @@ async fn serve_static(
     }
 }
 
-fn redirect(uri: &str) -> impl IntoResponse {
+fn redirect(uri: &str) -> impl IntoResponse + use<'_> {
     (
         StatusCode::SEE_OTHER,
         [("Location", uri)],
